@@ -1,0 +1,21 @@
+# macOS
+.DS_Store
+
+# n8n workflow temp files
+*.code-workspace
+*.log
+
+# Node / JS (in case you use Node locally)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Python (if any scripts)
+__pycache__/
+*.pyc
+
+# VS Code
+.vscode/
+
+# Any system files
+Thumbs.db
