@@ -1,0 +1,369 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "return [\n  { json: { company_name: \"NextGen\", first_name: \"Eve\", email: \"eve@nextgen.com\", website_url: \"https://nextgen.com\" }},\n  { json: { company_name: \"TestCorp\", first_name: \"Bob\", email: \"bob@testcorp.com\", website_url: \"https://testcorp.com\" }},\n  { json: { company_name: \"InnovateX\", first_name: \"Charlie\", email: \"charlie@innovatex.com\", website_url: \"https://innovatex.com\" }},\n  { json: { company_name: \"DemoCo\", first_name: \"Alice\", email: \"alice@democo.com\", website_url: \"https://democo.com\" }},\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        0
+      ],
+      "id": "cab776f0-e79d-4f2c-9f17-2cd5df10f833",
+      "name": "Lead Node"
+    },
+    {
+      "parameters": {
+        "jsCode": "return $items().map((item, index) => {\n  // Fixed audit scores and issues for demo\n  const scores = [96, 61, 85, 72]; \n  const issues = [\n    \"Missing contact form; No GA4 tracking\",\n    \"No retargeting setup; weak CTA\",\n    \"SSL issues detected; schema markup missing\",\n    \"Page speed could be improved; Core Web Vitals low\"\n  ];\n  \n  let severity = \"\";\n  if (scores[index] >= 85) severity = \"High\";\n  else if (scores[index] >= 70) severity = \"Medium\";\n  else severity = \"Low\";\n\n  return {\n    json: {\n      ...item.json,\n      audit_score: scores[index],\n      severity: severity,\n      critical_issues_found: issues[index],\n      audit_report_url: `https://example.com/reports/${item.json.company_name}-audit.pdf`\n    }\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        624,
+        0
+      ],
+      "id": "4e058337-6867-4c54-ab03-d5e3ae1a3a5a",
+      "name": "Audit Node"
+    },
+    {
+      "parameters": {
+        "jsCode": "return $items().map(item => {\n  let emailBody = \"\";\n  let priority = \"Cold\";\n  let followUpDays = 7;\n  let impact = \"Low urgency optimization\";\n\n  if(item.json.severity === \"High\") {\n    emailBody = `Hi ${item.json.first_name},\n\nI ran a quick audit on ${item.json.company_name} and noticed some critical issues: ${item.json.critical_issues_found}.\nThis can directly affect your conversions. Full report: ${item.json.audit_report_url}\n\nWe’ve helped similar companies fix this quickly.\n\nBest,\n[Your Name]`;\n    priority = \"Hot\";\n    followUpDays = 1;\n    impact = \"High risk of lost conversions\";\n  } else if(item.json.severity === \"Medium\") {\n    emailBody = `Hi ${item.json.first_name},\n\nI ran a quick audit on ${item.json.company_name} and noticed: ${item.json.critical_issues_found}.\nFull report: ${item.json.audit_report_url}\n\nBest,\n[Your Name]`;\n    priority = \"Warm\";\n    followUpDays = 3;\n    impact = \"Moderate growth opportunity\";\n  } else {\n    emailBody = `Hi ${item.json.first_name},\n\nQuick note: your website shows ${item.json.critical_issues_found}.\nFull report: ${item.json.audit_report_url}\n\nBest,\n[Your Name]`;\n  }\n\n  return {\n    json: {\n      ...item.json,\n      email_body: emailBody,\n      priority,\n      follow_up_in_days: followUpDays,\n      likely_impact: impact\n    }\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        832,
+        0
+      ],
+      "id": "7ffd8c39-cf96-4a12-b114-593cbf7f2e15",
+      "name": "Email Node"
+    },
+    {
+      "parameters": {
+        "jsCode": "let outputText = \"\";\n\n$items().forEach(item => {\n  outputText += `\nCompany: ${item.json.company_name}\nContact: ${item.json.first_name}\nPriority: ${item.json.priority}\nAudit Score: ${item.json.audit_score}\nSeverity: ${item.json.severity}\nLikely Impact: ${item.json.likely_impact}\nRecommended Follow-Up: ${item.json.follow_up_in_days} days\n----------------------------\n`;\n});\n\nreturn [{ json: { output: outputText } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1456,
+        0
+      ],
+      "id": "c678203f-61a1-432d-93f3-3d91e2ca61a3",
+      "name": "Output Node"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1️⃣ Optional: filter for actionable leads (Hot or audit_score >= 70)\nlet filteredItems = $items().filter(item => \n    item.json.priority === \"Hot\" || item.json.audit_score >= 70\n);\n\n// 2️⃣ Define emoji mapping\nconst severityEmoji = { \"High\": \"🔥\", \"Medium\": \"⚡\", \"Low\": \"✅\" };\nconst priorityEmoji = { \"Hot\": \"🔥\", \"Warm\": \"⚡\", \"Cold\": \"✅\" };\n\n// 3️⃣ Sort by audit_score descending\nfilteredItems.sort((a, b) => b.json.audit_score - a.json.audit_score);\n\n// 4️⃣ Build the output text\nlet outputText = \"\";\nfilteredItems.forEach(item => {\n    const sev = item.json.severity || \"Low\";\n    const pri = item.json.priority || \"Cold\";\n    outputText += `\nCompany: ${item.json.company_name}\nContact: ${item.json.first_name}\nPriority: ${pri} ${priorityEmoji[pri]}\nAudit Score: ${item.json.audit_score}\nSeverity: ${sev} ${severityEmoji[sev]}\nLikely Impact: ${item.json.likely_impact}\nFollow-up: ${item.json.follow_up_in_days} days\n----------------------------\n`;\n});\n\nreturn [{ json: { output: outputText } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        992,
+        272
+      ],
+      "id": "f239fc24-bb11-4250-9f09-f9803f33c62a",
+      "name": "Summary Table"
+    },
+    {
+      "parameters": {
+        "jsCode": "let outputText = \"\";\n\n$items().forEach(item => {\n  outputText += `[Copy this email for outreach]\nTo: ${item.json.email}\nSubject: Quick question about ${item.json.company_name}\n\n${item.json.email_body}\n----------------------------\n`;\n});\n\nreturn [{ json: { output: outputText } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1280,
+        192
+      ],
+      "id": "2f261074-9eaf-41eb-a2da-b90af26ed1a9",
+      "name": "Copy Email"
+    },
+    {
+      "parameters": {
+        "jsCode": "return $items()\n  .filter(item => item.json.priority === \"Hot\")\n  .map(item => ({ json: item.json }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1072,
+        -112
+      ],
+      "id": "63d8553d-3556-43cc-937b-bfb1b5233342",
+      "name": "Hot Leads Only"
+    },
+    {
+      "parameters": {
+        "jsCode": "return $items()\n  .filter(item => item.json.audit_score >= 70)\n  .map(item => ({ json: item.json }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1184,
+        -432
+      ],
+      "id": "4ed89071-5c95-4de3-ac2a-5863638e8812",
+      "name": "HighScore Leads"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Step 1: Define emoji maps\nconst severityEmoji = {\n  High: \"🔥\",\n  Medium: \"⚡\",\n  Low: \"✅\"\n};\n\nconst priorityEmoji = {\n  Hot: \"🔥\",\n  Warm: \"⚡\",\n  Cold: \"✅\"\n};\n\n// Step 2: Filter for actionable leads (HighScore or Hot)\nconst filteredItems = $items().filter(item => \n  item.json.audit_score >= 70 || item.json.priority === \"Hot\"\n);\n\n// Step 3: Sort descending by audit_score\nfilteredItems.sort((a, b) => b.json.audit_score - a.json.audit_score);\n\n// Step 4: Build summary table & email copy\nlet summaryOutput = \"\";\nlet emailOutput = \"\";\n\nfilteredItems.forEach(item => {\n  const company = item.json.company_name;\n  const contact = item.json.first_name;\n  const priority = item.json.priority;\n  const priorityEm = priorityEmoji[priority] || \"\";\n  const score = item.json.audit_score;\n  const severity = item.json.severity;\n  const severityEm = severityEmoji[severity] || \"\";\n  const impact = item.json.likely_impact;\n  const followUp = item.json.follow_up_in_days;\n\n  // Summary table row\n  summaryOutput += `${company} | ${contact} | ${priority} ${priorityEm} | ${score} | ${severity} ${severityEm} | ${impact} | Follow-up: ${followUp} day(s)\\n`;\n\n  // Email copy\n  emailOutput += `[Copy this email for outreach]\nTo: ${item.json.email}\nSubject: Quick question about ${company}\n\n${item.json.email_body}\n----------------------------\\n`;\n});\n\n// Step 5: Return as output\nreturn [{\n  json: {\n    summary_table: summaryOutput,\n    email_copy: emailOutput\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1312,
+        368
+      ],
+      "id": "8623fe9f-ba21-49e5-ade1-8facd2938edb",
+      "name": "Polished Summary + Emails"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        208,
+        0
+      ],
+      "id": "3e85e3a0-d47d-41ec-be3e-b1e1bda495d0",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Grab all items from the Filter node\nconst filterItems = $node[\"Filter\"].json; // .json gives an array of items from the Filter node\n\nlet logText = filterItems.map(item => {\n  return `Email sent to: ${item.email}, Company: ${item.company_name}, Audit Score: ${item.audit_score}`;\n}).join(\"\\n\");\n\nreturn [{ json: { log: logText } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        512
+      ],
+      "id": "1f240837-4531-45f2-a2a6-3094f10b0f5b",
+      "name": "Email Log"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Filter only Hot priority or HighScore leads\nreturn $items()\n  .filter(item => item.json.priority === \"Hot\" || item.json.audit_score >= 70)\n  .map(item => ({ json: item.json }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        496,
+        240
+      ],
+      "id": "56d9a657-42c7-4f66-a713-403c02859469",
+      "name": "Filter"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{$json[\"email\"]}}",
+        "subject": "=Quick question about {{$json[\"company_name\"]}}",
+        "message": "={{$json[\"email_body\"]}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        672,
+        320
+      ],
+      "id": "e6b97aa0-5d93-4dfa-a715-c7a2c5952f09",
+      "name": "Gmail",
+      "webhookId": "ca386465-cb68-421f-8a92-91182eeb0784",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "aSitsnI88iJ4zu67",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Lead Node": {
+      "main": [
+        [
+          {
+            "node": "Audit Node",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Audit Node": {
+      "main": [
+        [
+          {
+            "node": "Email Node",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Node": {
+      "main": [
+        [
+          {
+            "node": "Copy Email",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Summary Table",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Output Node",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Hot Leads Only",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "HighScore Leads",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Polished Summary + Emails",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Output Node": {
+      "main": [
+        []
+      ]
+    },
+    "Summary Table": {
+      "main": [
+        []
+      ]
+    },
+    "Copy Email": {
+      "main": [
+        []
+      ]
+    },
+    "Hot Leads Only": {
+      "main": [
+        [
+          {
+            "node": "Output Node",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Summary Table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HighScore Leads": {
+      "main": [
+        [
+          {
+            "node": "Summary Table",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Copy Email",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Output Node",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Polished Summary + Emails": {
+      "main": [
+        [
+          {
+            "node": "Summary Table",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Copy Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Lead Node",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail": {
+      "main": [
+        [
+          {
+            "node": "Email Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "0b339f43-51d9-4775-82d5-69d302007626",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0f6be122babb0e6c638febc44852631456ba1692455ced9bdce9b6bafda6e9b0"
+  },
+  "id": "O10YFKnCw3DMTF29",
+  "tags": []
+}
